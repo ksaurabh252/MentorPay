@@ -3,6 +3,26 @@ import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
+const getRolePermissions = (role) => ({
+  sessions: {
+    create: role === 'admin',
+    view: true
+  },
+  receipts: {
+    generate: true,
+    view: true
+  },
+  taxes: {
+    modify: role === 'admin',
+    view: true
+  },
+  audit: {
+    view_own: true,
+    view_all: role === 'admin'
+  }
+});
+
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,8 +90,41 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    resetPassword
+    resetPassword,
+    permissions: user ? getRolePermissions(user.role) : null,
   };
+
+
+  // const getRolePermissions = (role) => {
+  //   const base = {
+  //     sessions: {
+  //       create: false,
+  //       view: true
+  //     },
+  //     receipts: {
+  //       generate: true,
+  //       view: true
+  //     },
+  //     taxes: {
+  //       modify: false,
+  //       view: true
+  //     },
+  //     audit: {
+  //       view_own: true,
+  //       view_all: false
+  //     }
+  //   };
+
+  //   if (role === 'admin') {
+  //     base.sessions.create = true;
+  //     base.taxes.modify = true;
+  //     base.audit.view_all = true;
+  //   }
+
+  //   return base;
+  // };
+
+
 
   return (
     <AuthContext.Provider value={value}>
@@ -82,10 +135,14 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+  return {
+    ...context,
+
+    permissions: context.user ? getRolePermissions(context.user.role) : null
+  };
 };
 
 export default AuthProvider;

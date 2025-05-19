@@ -1,121 +1,111 @@
-# MentorPay - Mentor Payment Management System
+# 🚀 MentorPay - Mentor Payment Management System
 
-![MentorPay Dashboard](https://via.placeholder.com/800x400?text=MentorPay+Dashboard)
+A comprehensive platform to streamline mentor session tracking, automated payout calculations, tax deductions, and receipt generation — all with built-in audit logging and optional secure communication.
 
-A comprehensive solution for managing mentor payments with automated calculations, receipt generation, and secure communication.
+---
 
-## ✨ Features
+## 🌟 Key Features
 
-### 1. Session Data Entry & Breakdown (Admin)
+### 🧑‍💼 **Admin Portal**
 
-✅ **Completed Features:**
+| Feature                | Status  | Description                                |
+| ---------------------- | ------- | ------------------------------------------ |
+| **Session Management** | ✅ Live | Manual entry + CSV upload with validations |
+| **Automated Payouts**  | ✅ Live | Auto-calculated with tax deductions        |
+| **Tax Configuration**  | ✅ Live | GST, TDS, and platform fees setup          |
+| **Receipt Generation** | ✅ Live | PDF format + email dispatch                |
+| **Audit Trail**        | ✅ Live | Full history with before/after viewer      |
+| **Test Mode**          | ✅ Live | Run safe simulations for payouts           |
 
-- Manual session entry form with validation
-- CSV bulk upload capability
-- Session fields: Mentor, Date, Time, Duration, Type, Rate
-- Smart hourly rate breakdown calculations
-- Date range filtering
-- Cumulative payout summary
+---
 
-### 2. Payout Calculation Module (Admin)
+### 👩‍🏫 **Mentor Portal**
 
-✅ **Completed Features:**
+| Feature                | Status  | Description                         |
+| ---------------------- | ------- | ----------------------------------- |
+| **Session Submission** | ✅ Live | Structured form with admin approval |
+| **Payout Dashboard**   | ✅ Live | Filterable transaction history      |
+| **Receipt Downloads**  | ✅ Live | Download individual session PDFs    |
+| **Activity Logs**      | ✅ Live | Track personal changes/actions      |
 
-- Automatic payout calculations
-- Tax & deduction configuration (GST, TDS, Platform Fees)
-- Final amount breakdown display
-- Manual adjustment override with audit logging
+---
 
-### 3. Receipt Generation & Sharing (Admin)
+### 🔄 **Integrations**
 
-✅ **Completed Features:**
+| Feature              | Status     | Description                                   |
+| -------------------- | ---------- | --------------------------------------------- |
+| **CSV/Excel Export** | ✅ Live    | Full data export functionality                |
+| **Webhooks**         | ⚠️ Partial | UI ready; backend trigger pending             |
+| **Secure Chat**      | ⏳ Planned | Encrypted messaging with file sharing support |
 
-- Interactive receipt preview
-- Customizable thank-you messages
-- One-click email simulation
-- PDF generation with:
-  - Session details
-  - Rate breakdowns
-  - Tax deductions
-  - Final payout amount
+---
 
-### 4. Mentor Dashboard
+## 🔍 Feature Highlights
 
-✅ **Completed Features:**
+### ✅ **Session Entry & Breakdown**
 
-- Filterable session history
-- Payout summary visualization
-- Receipt download (PDF)
-- Payment status indicators:
+- Add sessions via form or CSV
+- Track mentor, date, time, duration, type, and hourly rate
+- Cumulative summary & smart breakdowns
+- Filter by date range
+
+### ✅ **Payout Calculation Engine**
+
+- Auto-deductions (GST, TDS, fees)
+- Override final amounts manually
+- Audit all adjustments
+
+### ✅ **PDF Receipts & Email**
+
+- Downloadable receipts with detailed breakdown
+- Add thank-you notes
+- Simulated email previews
+
+### ✅ **Mentor Payout Dashboard**
+
+- Visual summary of earnings
+- Track payment status:
   - ✅ Paid
   - ⏳ Pending
   - 🔍 Under Review
 
-### 5. Secure Chat Module (Admin ↔ Mentor)
+### ✅ **Audit Logging**
 
-⚠️ **Planned Features:**
+- Every change recorded
+- Filter logs by session, user, or date
+- Visual diff viewer for before/after
 
-- End-to-end encrypted messaging
-- Conversation threading
-- Timestamped message history
-- File attachment support
+### ✅ **Test Mode**
 
-### 6. Audit Logs & History (Admin)
+- Dry-run calculations without actual dispatch
+- View impact by mentor, session, and tax component
 
-✅ **Completed Features:**
+### ✅ **Export & Webhook Panel**
 
-- Change tracking for all critical actions
-- Filterable by:
-  - User
-  - Date range
-  - Session ID
-- Before/After diff viewer
+- Export sessions and payouts
+- Setup webhook URLs, events, and secrets
+- Trigger test payloads (live dispatch pending)
 
-### 7. Test Mode & Simulation (Admin)
+---
 
-✅ **Completed Features:**
+## 🧮 Tax Administration
 
-- Safe payout previews
-- Dry-run simulation
-- Test mode toggle
-- Simulation results dashboard:
-  - Total payout
-  - Affected mentors
-  - Tax deductions
-  - Net amounts
+- **Path:** `/admin/taxes`
+- **Features:**
+  - Real-time rate adjustment (GST, TDS, Platform Fees)
+  - Input validation (0–100%)
+  - Audit-ready logging of every change for compliance
 
-### 8. Export & Webhooks
+---
 
-✅ **Completed Features:**
+## 📄 Mentor Receipt Flow
 
-- CSV/Excel export
-- Webhook configuration panel:
-  - URL setup
-  - Secret key
-  - Event selection
-  - Test capability
+    Mentor->>System: Requests receipt
+    System->>PDF: Generates document
+    PDF->>Mentor: Downloads file
+    System->>Database: Logs access
 
-⚠️ **Pending Integration:**
-
-- Live webhook triggering (requires backend API)
-
-## 🛠️ Technical Implementation
-
-### Frontend Stack
-
-- **Framework**: React 18
-- **State Management**: Context API
-- **UI Library**: Radix UI + custom Tailwind components
-- **Data Visualization**: React Table (TanStack)
-- **PDF Generation**: React-PDF
-- **Security**: Crypto-JS for webhook signatures
-
-🚀 Getting Started
-Prerequisites
-
-    Node.js v16+
-
-    npm/yarn
+Setup Instructions
 
 git clone https://github.com/ksaurabh252/MentorPay
 cd mentorpay

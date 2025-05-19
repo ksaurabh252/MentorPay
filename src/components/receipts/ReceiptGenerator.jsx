@@ -6,6 +6,7 @@ import ReceiptPDF from './ReceiptPDF';
 
 const ReceiptGenerator = ({ sessions, payoutDetails }) => {
   const { user } = useAuth();
+  const { permissions } = useAuth();
   const [message, setMessage] = useState('Thank you for your contribution!');
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
@@ -155,14 +156,16 @@ const ReceiptGenerator = ({ sessions, payoutDetails }) => {
 
       {/* Action Buttons */}
       <div className="flex gap-3">
-        <button
-          onClick={handleSendEmail}
-          disabled={isSending}
-          className={`flex items-center gap-2 px-4 py-2 rounded text-white ${isSending ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-        >
-          <FiMail /> {isSending ? 'Sending...' : 'Send via Email'}
-        </button>
+        {permissions?.receipts.generate && (
+          <button
+            onClick={handleSendEmail}
+            disabled={isSending}
+            className={`flex items-center gap-2 px-4 py-2 rounded text-white ${isSending ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+          >
+            <FiMail /> {isSending ? 'Sending...' : 'Send via Email'}
+          </button>
+        )}
         {isSent && (
           <div className="flex items-center px-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
             Receipt sent successfully!
