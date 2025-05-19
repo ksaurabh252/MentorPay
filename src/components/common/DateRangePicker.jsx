@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { format, subDays, addDays } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
-
 import { Calendar } from './Calendar';
 import { Button } from './Button';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-
 
 const DateRangePicker = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
@@ -15,15 +13,55 @@ const DateRangePicker = ({ value, onChange }) => {
   });
 
   const handleApply = () => {
-    onChange(dateRange);
+    // Validate dates
+    if (!dateRange.startDate || !dateRange.endDate) {
+      console.error('Please select both start and end dates');
+      return;
+    }
+
+    if (isNaN(dateRange.startDate.getTime())) {
+      console.error('Invalid start date');
+      return;
+    }
+
+    if (isNaN(dateRange.endDate.getTime())) {
+      console.error('Invalid end date');
+      return;
+    }
+
+    // Call the onChange callback with the selected range
+    onChange({
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate
+    });
     setOpen(false);
   };
 
   const handleQuickSelect = (days) => {
     const endDate = new Date();
     const startDate = subDays(endDate, days);
-    setDateRange({ startDate, endDate });
-    onChange({ startDate, endDate });
+    const newRange = { startDate, endDate };
+
+    setDateRange(newRange);
+    onChange(newRange); // Immediately apply quick select changes
+  };
+
+  const handleDayNavigation = (direction) => {
+    const adjustment = direction === 'prev' ? -1 : 1;
+    const newRange = {
+      startDate: addDays(dateRange.startDate, adjustment),
+      endDate: addDays(dateRange.endDate, adjustment)
+    };
+    setDateRange(newRange);
+  };
+
+  const handleCalendarSelect = (range) => {
+    if (range?.from && range?.to) {
+      setDateRange({
+        startDate: range.from,
+        endDate: range.to
+      });
+    }
   };
 
   return (
@@ -48,38 +86,34 @@ const DateRangePicker = ({ value, onChange }) => {
             </div>
           </Button>
         </PopoverTrigger>
+
         <PopoverContent className="w-auto p-0" align="start">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+            {/* Date navigation */}
             <div className="flex justify-between items-center mb-4">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  setDateRange({
-                    startDate: subDays(dateRange.startDate, 1),
-                    endDate: subDays(dateRange.endDate, 1),
-                  });
-                }}
+                onClick={() => handleDayNavigation('prev')}
               >
                 <FaChevronLeft className="h-4 w-4" />
               </Button>
+
               <div className="text-sm font-medium">
                 {format(dateRange.startDate, 'MMM yyyy')}
               </div>
+
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  setDateRange({
-                    startDate: addDays(dateRange.startDate, 1),
-                    endDate: addDays(dateRange.endDate, 1),
-                  });
-                }}
+                onClick={() => handleDayNavigation('next')}
               >
                 <FaChevronRight className="h-4 w-4" />
               </Button>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
+              {/* Calendar */}
               <div>
                 <Calendar
                   mode="range"
@@ -87,17 +121,12 @@ const DateRangePicker = ({ value, onChange }) => {
                     from: dateRange.startDate,
                     to: dateRange.endDate,
                   }}
-                  onSelect={(range) => {
-                    if (range?.from && range?.to) {
-                      setDateRange({
-                        startDate: range.from,
-                        endDate: range.to,
-                      });
-                    }
-                  }}
+                  onSelect={handleCalendarSelect}
                   className="rounded-md border"
                 />
               </div>
+
+              {/* Quick select options */}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium">Quick Select</h3>
@@ -132,14 +161,15 @@ const DateRangePicker = ({ value, onChange }) => {
                     </Button>
                   </div>
                 </div>
+
+                {/* Action buttons */}
                 <div className="flex justify-end space-x-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                  >
+                  <Button variant="outline" onClick={() => setOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleApply}>Apply</Button>
+                  <Button onClick={handleApply}>
+                    Apply
+                  </Button>
                 </div>
               </div>
             </div>
@@ -150,7 +180,6 @@ const DateRangePicker = ({ value, onChange }) => {
   );
 };
 
-// Simple CalendarIcon component
 const CalendarIcon = ({ className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -171,4 +200,4 @@ const CalendarIcon = ({ className }) => (
   </svg>
 );
 
-export default DateRangePicker
+export default DateRangePicker;

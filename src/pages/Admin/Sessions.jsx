@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import CSVUpload from '../../components/sessions/CSVUpload';
@@ -18,6 +18,7 @@ const sessionSchema = Yup.object().shape({
 const AdminSessions = () => {
   const [activeTab, setActiveTab] = useState('manual');
   const [sessions, setSessions] = useState([]);
+  const [filteredSessions, setFilteredSessions] = useState([]);
   const [dateRange, setDateRange] = useState({
     startDate: subDays(new Date(), 7),
     endDate: new Date(),
@@ -39,17 +40,33 @@ const AdminSessions = () => {
     setSessions([...sessions, ...data]);
   };
 
-  const filteredSessions = sessions.filter((session) => {
-    const sessionDate = new Date(session.sessionDate);
-    return (
-      sessionDate >= dateRange.startDate && sessionDate <= dateRange.endDate
-    );
-  });
+  // Function to filter sessions by date range
+  const filterSessions = (range) => {
+    const filtered = sessions.filter((session) => {
+      const sessionDate = new Date(session.sessionDate);
+      return (
+        sessionDate >= range.startDate &&
+        sessionDate <= range.endDate
+      );
+    });
+    setFilteredSessions(filtered);
+  };
 
-  const totalPayout = filteredSessions.reduce(
-    (sum, session) => sum + session.payout,
-    0
-  );
+
+  const handleDateRangeChange = (range) => {
+    console.log('New date range selected:', range);
+    setDateRange(range);
+    filterSessions(range);
+  };
+
+  useEffect(() => {
+    filterSessions(dateRange);
+  }, [sessions]); // Re-filter when sessions change
+
+  // const totalPayout = filteredSessions.reduce(
+  //   (sum, session) => sum + session.payout,
+  //   0
+  // );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -58,16 +75,20 @@ const AdminSessions = () => {
       </h1>
 
       <div className="mb-6">
-        <DateRangePicker value={dateRange} onChange={(range) => setDateRange(range)} />
+        <DateRangePicker value={dateRange} onChange={handleDateRangeChange} />
         <div className="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+
           <p className="text-gray-600 dark:text-gray-300">
             Total Payout for Selected Range:
           </p>
+
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            ₹{totalPayout.toFixed(2)}
+            ₹{filteredSessions.reduce((sum, session) => sum + session.payout, 0).toFixed(2)}
           </p>
         </div>
       </div>
+
+      <SessionList sessions={filteredSessions} />
 
       <div className="mb-6">
         <div className="flex border-b border-gray-200 dark:border-gray-700">

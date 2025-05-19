@@ -1,81 +1,121 @@
 # MentorPay - Mentor Payment Management System
 
-A React-based web application for managing mentor payments, sessions, and automated payout calculations with tax deductions.
+![MentorPay Dashboard](https://via.placeholder.com/800x400?text=MentorPay+Dashboard)
+
+A comprehensive solution for managing mentor payments with automated calculations, receipt generation, and secure communication.
 
 ## ✨ Features
 
-### ✅ Authentication & User Management
+### 1. Session Data Entry & Breakdown (Admin)
 
-- Role-based access (Admin/Mentor)
-- Login/Signup with email/password
-- Password reset functionality
-- Protected routes based on user roles
-- Dark mode preference persistence
+✅ **Completed Features:**
 
-### 📊 Admin Dashboard
+- Manual session entry form with validation
+- CSV bulk upload capability
+- Session fields: Mentor, Date, Time, Duration, Type, Rate
+- Smart hourly rate breakdown calculations
+- Date range filtering
+- Cumulative payout summary
 
-- **Session Management**
-  - Add sessions manually or via CSV upload
-  - Filter sessions by date range
-  - View all sessions in paginated table
-  - Export sessions to CSV/Excel
-- **Payout Calculations**
-  - Automated payout calculations
-  - Configurable tax deductions (GST, TDS, Platform Fee)
-  - Manual payout adjustments
-  - Payout summary with breakdown
-- **Receipt Generation**
-  - Structured receipt preview
-  - Customizable thank-you message
-  - One-click PDF generation
-  - Email receipt simulation
+### 2. Payout Calculation Module (Admin)
 
-### 👩‍🏫 Mentor Dashboard
+✅ **Completed Features:**
 
-- **Session History**
-  - Filter by status (Paid/Pending/Under Review)
-  - Filter by date range
-  - Export personal sessions to CSV/Excel
-- **Payout Tracking**
-  - Total payout summary
-  - Average rate calculation
-  - Download PDF receipts per session
-- **Payment Status**
-  - Color-coded status indicators
-  - Detailed payout breakdowns
+- Automatic payout calculations
+- Tax & deduction configuration (GST, TDS, Platform Fees)
+- Final amount breakdown display
+- Manual adjustment override with audit logging
 
-## 🛠️ Technical Stack
+### 3. Receipt Generation & Sharing (Admin)
 
-### Frontend
+✅ **Completed Features:**
+
+- Interactive receipt preview
+- Customizable thank-you messages
+- One-click email simulation
+- PDF generation with:
+  - Session details
+  - Rate breakdowns
+  - Tax deductions
+  - Final payout amount
+
+### 4. Mentor Dashboard
+
+✅ **Completed Features:**
+
+- Filterable session history
+- Payout summary visualization
+- Receipt download (PDF)
+- Payment status indicators:
+  - ✅ Paid
+  - ⏳ Pending
+  - 🔍 Under Review
+
+### 5. Secure Chat Module (Admin ↔ Mentor)
+
+⚠️ **Planned Features:**
+
+- End-to-end encrypted messaging
+- Conversation threading
+- Timestamped message history
+- File attachment support
+
+### 6. Audit Logs & History (Admin)
+
+✅ **Completed Features:**
+
+- Change tracking for all critical actions
+- Filterable by:
+  - User
+  - Date range
+  - Session ID
+- Before/After diff viewer
+
+### 7. Test Mode & Simulation (Admin)
+
+✅ **Completed Features:**
+
+- Safe payout previews
+- Dry-run simulation
+- Test mode toggle
+- Simulation results dashboard:
+  - Total payout
+  - Affected mentors
+  - Tax deductions
+  - Net amounts
+
+### 8. Export & Webhooks
+
+✅ **Completed Features:**
+
+- CSV/Excel export
+- Webhook configuration panel:
+  - URL setup
+  - Secret key
+  - Event selection
+  - Test capability
+
+⚠️ **Pending Integration:**
+
+- Live webhook triggering (requires backend API)
+
+## 🛠️ Technical Implementation
+
+### Frontend Stack
 
 - **Framework**: React 18
 - **State Management**: Context API
-- **Routing**: React Router 6
-- **UI Components**:
-  - Radix UI Primitives
-  - Class Variance Authority (CVA)
-- **Tables**: TanStack Table v8
+- **UI Library**: Radix UI + custom Tailwind components
+- **Data Visualization**: React Table (TanStack)
 - **PDF Generation**: React-PDF
-- **Data Export**:
-  - Papaparse (CSV)
-  - SheetJS (Excel)
-- **Date Handling**: date-fns
-- **Icons**: React Icons
+- **Security**: Crypto-JS for webhook signatures
 
-### Backend (Mock)
+🚀 Getting Started
+Prerequisites
 
-- LocalStorage-based mock API
-- Simulated authentication
-- Session data persistence
+    Node.js v16+
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js (v16+)
-- npm/yarn
-
-### Installation
+    npm/yarn
 
 git clone https://github.com/ksaurabh252/MentorPay
 cd mentorpay
