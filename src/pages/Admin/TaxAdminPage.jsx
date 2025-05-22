@@ -1,6 +1,5 @@
-
-import { useTaxContext } from '../../contexts/TaxContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useTaxContext } from "../../contexts/TaxContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const TaxAdminPage = () => {
   const { taxes, setTaxes } = useTaxContext();
@@ -8,8 +7,8 @@ const TaxAdminPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // In a real app, you would save to API here
-    alert('Tax settings updated successfully!');
+
+    alert("Tax settings updated successfully!");
   };
 
   if (!permissions?.taxes.modify) {
@@ -25,13 +24,18 @@ const TaxAdminPage = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Tax Configuration</h1>
 
-      <form onSubmit={handleSubmit} className="max-w-lg bg-white p-6 rounded-lg shadow">
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-lg bg-white p-6 rounded-lg shadow"
+      >
         <div className="mb-4">
           <label className="block mb-2">Platform Fee (%)</label>
           <input
             type="number"
             value={taxes.platformFee}
-            onChange={(e) => setTaxes({ ...taxes, platformFee: e.target.value })}
+            onChange={(e) =>
+              setTaxes({ ...taxes, platformFee: e.target.value })
+            }
             className="w-full p-2 border rounded"
             min="0"
             max="100"

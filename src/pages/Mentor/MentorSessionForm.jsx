@@ -1,6 +1,7 @@
 
 import { Formik, Field } from 'formik';
 import { useAuth } from '../../contexts/AuthContext';
+import { FiAlertTriangle } from 'react-icons/fi';
 
 const MentorSessionForm = () => {
   const { user } = useAuth();

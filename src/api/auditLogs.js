@@ -1,4 +1,3 @@
-// src/api/auditLogs.js
 export const fetchAuditLogs = async (userId) => {
   try {
     // Mock implementation:

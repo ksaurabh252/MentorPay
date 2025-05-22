@@ -108,6 +108,11 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/admin/payouts" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminPayouts />
+                  </ProtectedRoute>
+                } />
                 <Route path="/mentor/sessions/new" element={<MentorSessionForm />} />
               </Routes>
             </AuthProvider>

@@ -1,27 +1,26 @@
-import { createContext, useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext();
 
 const getRolePermissions = (role) => ({
   sessions: {
-    create: role === 'admin',
-    view: true
+    create: ["admin", "mentor"].includes(role),
+    view: true,
   },
   receipts: {
     generate: true,
-    view: true
+    view: true,
   },
   taxes: {
-    modify: role === 'admin',
-    view: true
+    modify: role === "admin",
+    view: true,
   },
   audit: {
     view_own: true,
-    view_all: role === 'admin'
-  }
+    view_all: role === "admin",
+  },
 });
-
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -30,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check for user in localStorage
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem("user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -40,40 +39,36 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       // First check localStorage users
-      const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
-      const user = storedUsers.find(u => u.email === email);
+      const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
+      const user = storedUsers.find(
+        (u) => u.email === email && u.password === password
+      );
 
-      if (!user) {
-        // User not found in the stored list
-        throw new Error('User not found');
-      }
+      if (!user) throw new Error("Invalid credentials");
 
-
-      if (user.password !== password) {
-        throw new Error('Invalid password');
-      }
+      // if (user.password !== password) {
+      //   throw new Error('Invalid password');
+      // }
 
       setUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem("user", JSON.stringify(user));
       return user;
     } catch (err) {
-
       console.error("Login error:", err);
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
   };
-
 
   const resetPassword = async (email) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const users = JSON.parse(localStorage.getItem('users')) || [];
-        const userExists = users.some(u => u.email === email);
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+        const userExists = users.some((u) => u.email === email);
 
         if (userExists) {
           resolve();
         } else {
-          reject(new Error('Email not found'));
+          reject(new Error("Email not found"));
         }
       }, 1000);
     });
@@ -81,8 +76,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    navigate('/');
+    localStorage.removeItem("user");
+    navigate("/");
   };
 
   const value = {
@@ -93,7 +88,6 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     permissions: user ? getRolePermissions(user.role) : null,
   };
-
 
   // const getRolePermissions = (role) => {
   //   const base = {
@@ -124,8 +118,6 @@ export const AuthProvider = ({ children }) => {
   //   return base;
   // };
 
-
-
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
@@ -136,12 +128,12 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return {
     ...context,
 
-    permissions: context.user ? getRolePermissions(context.user.role) : null
+    permissions: context.user ? getRolePermissions(context.user.role) : null,
   };
 };
 
