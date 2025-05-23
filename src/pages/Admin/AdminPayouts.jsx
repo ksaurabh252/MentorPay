@@ -9,7 +9,6 @@ import WebhookConfig from "../../components/payouts/WebhookConfig";
 import { FiPlay, FiStopCircle, FiDownload, FiShare2 } from "react-icons/fi";
 import { createSignature } from "../../utils/webhookUtils";
 
-
 const AdminPayouts = () => {
   const { testMode, setTestMode } = useTestMode();
   const location = useLocation();
@@ -24,7 +23,7 @@ const AdminPayouts = () => {
   const [adjustmentReason, setAdjustmentReason] = useState("");
   const [simulationResults, setSimulationResults] = useState(null);
   const [webhooks, setWebhooks] = useState([]);
-  const [activeTab, setActiveTab] = useState('payouts');
+  const [activeTab, setActiveTab] = useState("payouts");
 
   const toggleTestMode = () => {
     if (testMode) {
@@ -36,13 +35,13 @@ const AdminPayouts = () => {
   const runSimulation = () => {
     const results = {
       totalPayout: totalPayout,
-      affectedMentors: [...new Set(sessions.map(s => s.mentorId))].length,
+      affectedMentors: [...new Set(sessions.map((s) => s.mentorId))].length,
       taxDeductions: sessions.reduce((sum, s) => sum + s.gst + s.tds, 0),
-      breakdown: sessions.map(s => ({
+      breakdown: sessions.map((s) => ({
         mentor: s.mentorName,
         sessions: 1,
-        amount: s.netAmount
-      }))
+        amount: s.netAmount,
+      })),
     };
     setSimulationResults(results);
   };
@@ -61,7 +60,8 @@ const AdminPayouts = () => {
       const platformFee = (grossAmount * taxes.platformFee) / 100;
       const gst = (platformFee * taxes.gstRate) / 100;
       const tds = (grossAmount * taxes.tdsRate) / 100;
-      const netAmount = grossAmount - platformFee - gst - tds + manualAdjustment;
+      const netAmount =
+        grossAmount - platformFee - gst - tds + manualAdjustment;
       return {
         ...session,
         platformFee,
@@ -73,50 +73,56 @@ const AdminPayouts = () => {
   };
 
   const calculatedSessions = calculatePayouts();
-  const totalPayout = calculatedSessions.reduce((sum, session) => sum + session.netAmount, 0);
+  const totalPayout = calculatedSessions.reduce(
+    (sum, session) => sum + session.netAmount,
+    0
+  );
 
   const exportToCSV = () => {
-    const csvData = calculatedSessions.map(session => ({
-      'Mentor ID': session.mentorId,
-      'Mentor Name': session.mentorName,
-      'Session Date': new Date(session.sessionDate).toLocaleDateString(),
-      'Duration (mins)': session.duration,
-      'Rate (₹/hr)': session.ratePerHour,
-      'Gross Amount': session.payout,
-      'Platform Fee': session.platformFee,
-      'GST': session.gst,
-      'TDS': session.tds,
-      'Net Amount': session.netAmount,
-      'Status': session.status
+    const csvData = calculatedSessions.map((session) => ({
+      "Mentor ID": session.mentorId,
+      "Mentor Name": session.mentorName,
+      "Session Date": new Date(session.sessionDate).toLocaleDateString(),
+      "Duration (mins)": session.duration,
+      "Rate (₹/hr)": session.ratePerHour,
+      "Gross Amount": session.payout,
+      "Platform Fee": session.platformFee,
+      GST: session.gst,
+      TDS: session.tds,
+      "Net Amount": session.netAmount,
+      Status: session.status,
     }));
 
     const worksheet = utils.json_to_sheet(csvData);
     const workbook = utils.book_new();
-    utils.book_append_sheet(workbook, worksheet, 'Payouts');
-    writeFile(workbook, `payouts_${new Date().toISOString().split('T')[0]}.xlsx`);
+    utils.book_append_sheet(workbook, worksheet, "Payouts");
+    writeFile(
+      workbook,
+      `payouts_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
   };
 
   const triggerWebhooks = async () => {
     const payload = {
-      event: 'payout_processed',
+      event: "payout_processed",
       data: {
         payout_date: new Date().toISOString(),
         total_amount: totalPayout,
         session_count: sessions.length,
-        mentor_count: new Set(sessions.map(s => s.mentorId)).size,
-        session_ids: sessions.map(s => s.id)
-      }
+        mentor_count: new Set(sessions.map((s) => s.mentorId)).size,
+        session_ids: sessions.map((s) => s.id),
+      },
     };
 
-    for (const hook of webhooks.filter(h => h.active)) {
+    for (const hook of webhooks.filter((h) => h.active)) {
       try {
         await fetch(hook.url, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'X-MentorPay-Signature': createSignature(hook.secret, payload)
+            "Content-Type": "application/json",
+            "X-MentorPay-Signature": createSignature(hook.secret, payload),
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
       } catch (err) {
         console.error(`Webhook to ${hook.url} failed:`, err);
@@ -126,9 +132,8 @@ const AdminPayouts = () => {
 
   const finalizePayouts = () => {
     triggerWebhooks();
-    alert('Payouts finalized and webhooks triggered!');
+    alert("Payouts finalized and webhooks triggered!");
   };
-
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -151,8 +156,8 @@ const AdminPayouts = () => {
           <button
             onClick={toggleTestMode}
             className={`flex items-center gap-2 px-4 py-2 rounded ${testMode
-              ? 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600'
-              : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                ? "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                : "bg-yellow-500 hover:bg-yellow-600 text-white"
               }`}
           >
             {testMode ? (
@@ -170,20 +175,26 @@ const AdminPayouts = () => {
 
       <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
         <button
-          className={`py-2 px-4 font-medium ${activeTab === 'payouts' ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-          onClick={() => setActiveTab('payouts')}
+          className={`py-2 px-4 font-medium ${activeTab === "payouts"
+              ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+              : "text-gray-500 dark:text-gray-400"
+            }`}
+          onClick={() => setActiveTab("payouts")}
         >
           Payout Calculation
         </button>
         <button
-          className={`py-2 px-4 font-medium ${activeTab === 'webhooks' ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-          onClick={() => setActiveTab('webhooks')}
+          className={`py-2 px-4 font-medium ${activeTab === "webhooks"
+              ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+              : "text-gray-500 dark:text-gray-400"
+            }`}
+          onClick={() => setActiveTab("webhooks")}
         >
           <FiShare2 className="inline mr-1" /> Webhooks
         </button>
       </div>
 
-      {activeTab === 'payouts' ? (
+      {activeTab === "payouts" ? (
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
             <PayoutCalculator sessions={calculatedSessions} />
@@ -199,7 +210,9 @@ const AdminPayouts = () => {
                   <input
                     type="number"
                     value={manualAdjustment}
-                    onChange={(e) => setManualAdjustment(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setManualAdjustment(parseFloat(e.target.value) || 0)
+                    }
                     className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
                   />
                 </div>
@@ -220,7 +233,9 @@ const AdminPayouts = () => {
                 <div className="mt-4 p-3 bg-yellow-50 dark:bg-gray-700 rounded text-sm">
                   <p className="font-medium">Note:</p>
                   <p>
-                    Manual adjustment of ₹{manualAdjustment} ({adjustmentReason || "No reason provided"}) will be applied to all payouts.
+                    Manual adjustment of ₹{manualAdjustment} (
+                    {adjustmentReason || "No reason provided"}) will be applied
+                    to all payouts.
                   </p>
                 </div>
               )}
@@ -229,6 +244,13 @@ const AdminPayouts = () => {
 
           <div className="space-y-6">
             <TaxDeductionForm taxes={taxes} onChange={handleTaxChange} />
+
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h3 className="font-bold">Calculation Summary</h3>
+              <p>Platform Fee: {taxes.platformFee}%</p>
+              <p>GST Rate: {taxes.gstRate}% (on platform fee)</p>
+              <p>TDS Rate: {taxes.tdsRate}% (on gross amount)</p>
+            </div>
             <PayoutSummary
               sessions={calculatedSessions}
               totalPayout={totalPayout}
@@ -267,21 +289,39 @@ const AdminPayouts = () => {
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Total Payout</div>
-                  <div className="text-xl font-bold">₹{simulationResults.totalPayout.toFixed(2)}</div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Affected Mentors</div>
-                  <div className="text-xl font-bold">{simulationResults.affectedMentors}</div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Tax Deductions</div>
-                  <div className="text-xl font-bold">₹{simulationResults.taxDeductions.toFixed(2)}</div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Net Amount</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Total Payout
+                  </div>
                   <div className="text-xl font-bold">
-                    ₹{(simulationResults.totalPayout - simulationResults.taxDeductions).toFixed(2)}
+                    ₹{simulationResults.totalPayout.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Affected Mentors
+                  </div>
+                  <div className="text-xl font-bold">
+                    {simulationResults.affectedMentors}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Tax Deductions
+                  </div>
+                  <div className="text-xl font-bold">
+                    ₹{simulationResults.taxDeductions.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Net Amount
+                  </div>
+                  <div className="text-xl font-bold">
+                    ₹
+                    {(
+                      simulationResults.totalPayout -
+                      simulationResults.taxDeductions
+                    ).toFixed(2)}
                   </div>
                 </div>
               </div>
