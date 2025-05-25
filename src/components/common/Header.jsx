@@ -6,7 +6,7 @@ const Header = () => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm text-white">
+    <header className="bg-white dark:bg-gray-900 shadow-sm text-white transition-colors duration-200">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="text-xl font-bold text-white dark:text-white">
           MentorPay

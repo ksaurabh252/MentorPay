@@ -56,6 +56,8 @@ const WebhookConfig = ({ webhooks, setWebhooks }) => {
       // Generate signature
       const signature = createSignature(secret, payload);
 
+      console.log('Generated Signature:', signature);
+
       // Simulate network delay (800-1200ms)
       await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
 
@@ -65,9 +67,10 @@ const WebhookConfig = ({ webhooks, setWebhooks }) => {
       }
 
       const isValid = mockVerifySignature(signature, payload, secret);
+      console.log('Signature Valid:', isValid); // Debug log
 
       if (!isValid) {
-        throw new Error("Signature verification failed");
+        throw new Error(`Signature verification failed - ${secret ? 'Invalid secret' : 'No secret provided'}`);
       }
 
       // Update mock call history
@@ -87,9 +90,11 @@ const WebhookConfig = ({ webhooks, setWebhooks }) => {
       setTestResult({
         status: 'success',
         message: `Mock webhook sent successfully to ${url}`,
-        payload
+        payload, signature
       });
     } catch (err) {
+      console.error('Webhook test failed:', err);
+
       setTestResult({
         status: 'error',
         message: err.message,

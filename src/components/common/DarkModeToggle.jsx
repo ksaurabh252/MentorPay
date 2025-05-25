@@ -9,7 +9,7 @@ const DarkModeToggle = () => {
     <button
       onClick={toggleDarkMode}
       className="p-2 rounded-full focus:outline-none"
-      aria-label="Toggle dark mode"
+      aria-label={`Toggle ${darkMode ? 'light' : 'dark'} mode`}
     >
       {darkMode ? (
         <FiSun className="w-5 h-5 text-yellow-300" />
