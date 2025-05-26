@@ -1,3 +1,4 @@
+import { FiLock } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 
 const TaxDeductionForm = ({ taxes, onChange }) => {
