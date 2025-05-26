@@ -18,3 +18,12 @@ export const verifySignature = (signature, payload, secret = MOCK_SECRET) => {
     CryptoJS.enc.Hex.parse(signature)
   );
 };
+
+export const mockVerifySignature = (
+  signature,
+  payload,
+  secret = MOCK_SECRET
+) => {
+  const expectedSig = createSignature(secret, payload);
+  return signature === expectedSig;
+};

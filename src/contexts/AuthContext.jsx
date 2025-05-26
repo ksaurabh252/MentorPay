@@ -52,7 +52,11 @@ export const AuthProvider = ({ children }) => {
 
       setUser(user);
       localStorage.setItem("user", JSON.stringify(user));
-      return user;
+      return {
+        ...user,
+        isAdmin: user.role === 'admin',
+        isMentor: user.role === 'mentor'
+      };
     } catch (err) {
       console.error("Login error:", err);
       throw new Error("Invalid credentials");

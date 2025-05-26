@@ -7,9 +7,11 @@ export const DarkModeContext = createContext();
 export const DarkModeProvider = ({ children }) => {
   const [darkMode, setDarkMode] = useState(() => {
     // Check localStorage or system preference
-    const savedMode = localStorage.getItem('darkMode');
-    if (savedMode !== null) return JSON.parse(savedMode);
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('darkMode');
+      if (savedMode !== null) return JSON.parse(savedMode);
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
   });
 
   useEffect(() => {

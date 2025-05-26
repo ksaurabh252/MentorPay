@@ -2,10 +2,16 @@
 import { Formik, Field } from 'formik';
 import { useAuth } from '../../contexts/AuthContext';
 import { FiAlertTriangle } from 'react-icons/fi';
+import { Navigate } from 'react-router-dom';
+
 
 const MentorSessionForm = () => {
-  const { user } = useAuth();
-  const { permissions } = useAuth();
+  const { user, permissions } = useAuth();
+
+  if (user?.role !== 'mentor') {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-4">Submit Session</h2>

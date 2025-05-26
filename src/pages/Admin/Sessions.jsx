@@ -5,6 +5,7 @@ import CSVUpload from '../../components/sessions/CSVUpload';
 import SessionList from '../../components/sessions/SessionList';
 import DateRangePicker from '../../components/common/DateRangePicker';
 import { subDays } from 'date-fns';
+import { useAuth } from '../../contexts/AuthContext';
 
 const sessionSchema = Yup.object().shape({
   mentorName: Yup.string()
@@ -29,6 +30,7 @@ const sessionSchema = Yup.object().shape({
 });
 
 const AdminSessions = () => {
+
   const [activeTab, setActiveTab] = useState('manual');
   const [sessions, setSessions] = useState([]);
   const [filteredSessions, setFilteredSessions] = useState([]);
@@ -38,6 +40,16 @@ const AdminSessions = () => {
   });
   // eslint-disable-next-line no-unused-vars
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    filterSessions(dateRange);
+  }, [sessions]);
+
+  const { user } = useAuth();
+  if (user?.role !== 'admin') {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
 
   const handleSubmit = async (values, { resetForm }) => {
     setIsSubmitting(true);
@@ -77,9 +89,7 @@ const AdminSessions = () => {
     filterSessions(range);
   };
 
-  useEffect(() => {
-    filterSessions(dateRange);
-  }, [sessions]);
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -101,8 +111,8 @@ const AdminSessions = () => {
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           <button
             className={`py-2 px-4 font-medium ${activeTab === 'manual'
-                ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-                : 'text-gray-500 dark:text-gray-400'
+              ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
+              : 'text-gray-500 dark:text-gray-400'
               }`}
             onClick={() => setActiveTab('manual')}
           >
@@ -110,8 +120,8 @@ const AdminSessions = () => {
           </button>
           <button
             className={`py-2 px-4 font-medium ${activeTab === 'csv'
-                ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-                : 'text-gray-500 dark:text-gray-400'
+              ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
+              : 'text-gray-500 dark:text-gray-400'
               }`}
             onClick={() => setActiveTab('csv')}
           >
@@ -146,8 +156,8 @@ const AdminSessions = () => {
                           name="mentorName"
                           as="select"
                           className={`w-full p-2 border rounded ${errors.mentorName && touched.mentorName
-                              ? 'border-red-500'
-                              : 'dark:bg-gray-700 dark:border-gray-600'
+                            ? 'border-red-500'
+                            : 'dark:bg-gray-700 dark:border-gray-600'
                             }`}
                         >
                           <option value="">Select Mentor</option>
@@ -171,8 +181,8 @@ const AdminSessions = () => {
                           name="sessionDate"
                           max={new Date().toISOString().split('T')[0]}
                           className={`w-full p-2 border rounded ${errors.sessionDate && touched.sessionDate
-                              ? 'border-red-500'
-                              : 'dark:bg-gray-700 dark:border-gray-600'
+                            ? 'border-red-500'
+                            : 'dark:bg-gray-700 dark:border-gray-600'
                             }`}
                         />
                         <ErrorMessage
@@ -191,8 +201,8 @@ const AdminSessions = () => {
                           type="time"
                           name="sessionTime"
                           className={`w-full p-2 border rounded ${errors.sessionTime && touched.sessionTime
-                              ? 'border-red-500'
-                              : 'dark:bg-gray-700 dark:border-gray-600'
+                            ? 'border-red-500'
+                            : 'dark:bg-gray-700 dark:border-gray-600'
                             }`}
                         />
                         <ErrorMessage
@@ -213,8 +223,8 @@ const AdminSessions = () => {
                           min="15"
                           step="15"
                           className={`w-full p-2 border rounded ${errors.duration && touched.duration
-                              ? 'border-red-500'
-                              : 'dark:bg-gray-700 dark:border-gray-600'
+                            ? 'border-red-500'
+                            : 'dark:bg-gray-700 dark:border-gray-600'
                             }`}
                         />
                         <ErrorMessage
@@ -233,8 +243,8 @@ const AdminSessions = () => {
                           name="sessionType"
                           as="select"
                           className={`w-full p-2 border rounded ${errors.sessionType && touched.sessionType
-                              ? 'border-red-500'
-                              : 'dark:bg-gray-700 dark:border-gray-600'
+                            ? 'border-red-500'
+                            : 'dark:bg-gray-700 dark:border-gray-600'
                             }`}
                         >
                           <option value="live">Live Session</option>
@@ -257,8 +267,8 @@ const AdminSessions = () => {
                           type="number"
                           name="ratePerHour"
                           className={`w-full p-2 border rounded ${errors.ratePerHour && touched.ratePerHour
-                              ? 'border-red-500'
-                              : 'dark:bg-gray-700 dark:border-gray-600'
+                            ? 'border-red-500'
+                            : 'dark:bg-gray-700 dark:border-gray-600'
                             }`}
                         />
                         <ErrorMessage
@@ -291,8 +301,8 @@ const AdminSessions = () => {
                       type="submit"
                       disabled={isSubmitting}
                       className={`mt-6 px-4 py-2 text-white rounded ${isSubmitting
-                          ? 'bg-blue-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700'
+                        ? 'bg-blue-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
                         }`}
                     >
                       {isSubmitting ? 'Submitting...' : 'Add Session'}

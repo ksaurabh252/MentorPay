@@ -8,6 +8,8 @@ const ProtectedRoute = ({
   inverse = false,
   redirectPath = "/",
   unauthorizedPath = "/unauthorized",
+  mentorRedirect = "/mentor/dashboard"
+
 }) => {
   const { user } = useContext(AuthContext);
   const location = useLocation();
@@ -20,6 +22,11 @@ const ProtectedRoute = ({
   // If no user is logged in, redirect to login with return location
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Redirect mentors trying to access admin routes
+  if (location.pathname.startsWith('/admin') && user.role !== 'admin') {
+    return <Navigate to={mentorRedirect} replace />;
   }
 
   // Check if route has role requirements and user doesn't have required role

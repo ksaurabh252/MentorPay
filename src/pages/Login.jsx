@@ -16,8 +16,13 @@ const Login = () => {
     try {
       setError('');
       setLoading(true);
-      await login(email, password);
-      navigate('/admin/sessions');
+      const user = await login(email, password);
+      // Redirect based on role
+      if (user.isAdmin) {
+        navigate('/admin/sessions');
+      } else {
+        navigate('/mentor/dashboard');
+      }
     } catch (err) {
       setError('Failed to log in: ' + err.message);
     }
