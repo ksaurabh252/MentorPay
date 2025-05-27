@@ -97,7 +97,11 @@ function App() {
 
                 {/* Fallback */}
                 <Route path="*" element={
-                  <Navigate to={localStorage.getItem('user')?.role === 'admin' ? '/admin/sessions' : '/mentor/dashboard'} />
+                  <Navigate to={
+                    JSON.parse(localStorage.getItem('user'))?.role === 'admin'
+                      ? '/admin/sessions'
+                      : '/mentor/dashboard'
+                  } />
                 } />
               </Routes>
             </AuthProvider>
