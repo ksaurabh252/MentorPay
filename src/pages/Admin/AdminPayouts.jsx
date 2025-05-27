@@ -19,8 +19,8 @@ const AdminPayouts = () => {
     platformFee: 10,
     tdsRate: 5,
   });
-  const [manualAdjustment, setManualAdjustment] = useState(0);
-  const [adjustmentReason, setAdjustmentReason] = useState("");
+  const [manualAdjustments, setManualAdjustments] = useState({});
+  const [adjustmentReasons, setAdjustmentReasons] = useState({});
   const [simulationResults, setSimulationResults] = useState(null);
   const [webhooks, setWebhooks] = useState([]);
   const [activeTab, setActiveTab] = useState("payouts");
@@ -32,15 +32,63 @@ const AdminPayouts = () => {
     setTestMode(!testMode);
   };
 
+  const handleAdjustmentChange = (sessionId, value) => {
+    setManualAdjustments(prev => ({
+      ...prev,
+      [sessionId]: parseFloat(value) || 0
+    }));
+  };
+
+  const handleReasonChange = (sessionId, reason) => {
+    setAdjustmentReasons(prev => ({
+      ...prev,
+      [sessionId]: reason
+    }));
+  };
+
+  const calculatePayouts = () => {
+    return sessions.map((session) => {
+      const grossAmount = session.payout;
+      const platformFee = (grossAmount * taxes.platformFee) / 100;
+      const gst = (platformFee * taxes.gstRate) / 100;
+      const tds = (grossAmount * taxes.tdsRate) / 100;
+      const adjustment = manualAdjustments[session.id] || 0;
+      const netAmount = grossAmount - platformFee - gst - tds + adjustment;
+
+      return {
+        ...session,
+        platformFee,
+        gst,
+        tds,
+        adjustment,
+        netAmount,
+        adjustmentReason: adjustmentReasons[session.id] || ""
+      };
+    });
+  };
+
+  const calculatedSessions = calculatePayouts();
+  const totalPayout = calculatedSessions.reduce(
+    (sum, session) => sum + session.netAmount,
+    0
+  );
+  const totalAdjustments = calculatedSessions.reduce(
+    (sum, session) => sum + (manualAdjustments[session.id] || 0),
+    0
+  );
+
   const runSimulation = () => {
     const results = {
-      totalPayout: totalPayout,
+      totalPayout,
+      totalAdjustments,
       affectedMentors: [...new Set(sessions.map((s) => s.mentorId))].length,
       taxDeductions: sessions.reduce((sum, s) => sum + s.gst + s.tds, 0),
-      breakdown: sessions.map((s) => ({
+      breakdown: calculatedSessions.map((s) => ({
         mentor: s.mentorName,
         sessions: 1,
         amount: s.netAmount,
+        adjustment: s.adjustment,
+        reason: s.adjustmentReason
       })),
     };
     setSimulationResults(results);
@@ -54,30 +102,6 @@ const AdminPayouts = () => {
     });
   };
 
-  const calculatePayouts = () => {
-    return sessions.map((session) => {
-      const grossAmount = session.payout;
-      const platformFee = (grossAmount * taxes.platformFee) / 100;
-      const gst = (platformFee * taxes.gstRate) / 100;
-      const tds = (grossAmount * taxes.tdsRate) / 100;
-      const netAmount =
-        grossAmount - platformFee - gst - tds + manualAdjustment;
-      return {
-        ...session,
-        platformFee,
-        gst,
-        tds,
-        netAmount,
-      };
-    });
-  };
-
-  const calculatedSessions = calculatePayouts();
-  const totalPayout = calculatedSessions.reduce(
-    (sum, session) => sum + session.netAmount,
-    0
-  );
-
   const exportToCSV = () => {
     const csvData = calculatedSessions.map((session) => ({
       "Mentor ID": session.mentorId,
@@ -89,6 +113,8 @@ const AdminPayouts = () => {
       "Platform Fee": session.platformFee,
       GST: session.gst,
       TDS: session.tds,
+      "Adjustment Amount": session.adjustment,
+      "Adjustment Reason": session.adjustmentReason,
       "Net Amount": session.netAmount,
       Status: session.status,
     }));
@@ -111,6 +137,7 @@ const AdminPayouts = () => {
         session_count: sessions.length,
         mentor_count: new Set(sessions.map((s) => s.mentorId)).size,
         session_ids: sessions.map((s) => s.id),
+        adjustments_total: totalAdjustments
       },
     };
 
@@ -132,7 +159,7 @@ const AdminPayouts = () => {
 
   const finalizePayouts = () => {
     triggerWebhooks();
-    alert("Payouts finalized and webhooks triggered!");
+    alert(`Payouts finalized for ${calculatedSessions.length} sessions!\nTotal: ₹${totalPayout.toFixed(2)}\nAdjustments: ₹${totalAdjustments.toFixed(2)}`);
   };
 
   return (
@@ -197,65 +224,29 @@ const AdminPayouts = () => {
       {activeTab === "payouts" ? (
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <PayoutCalculator sessions={calculatedSessions} />
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Manual Adjustment
-              </h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Adjustment Amount (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={manualAdjustment}
-                    onChange={(e) =>
-                      setManualAdjustment(parseFloat(e.target.value) || 0)
-                    }
-                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Reason
-                  </label>
-                  <input
-                    type="text"
-                    value={adjustmentReason}
-                    onChange={(e) => setAdjustmentReason(e.target.value)}
-                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-                    placeholder="Bonus, Penalty, etc."
-                  />
-                </div>
-              </div>
-              {manualAdjustment !== 0 && (
-                <div className="mt-4 p-3 bg-yellow-50 dark:bg-gray-700 rounded text-sm">
-                  <p className="font-medium">Note:</p>
-                  <p>
-                    Manual adjustment of ₹{manualAdjustment} (
-                    {adjustmentReason || "No reason provided"}) will be applied
-                    to all payouts.
-                  </p>
-                </div>
-              )}
-            </div>
+            <PayoutCalculator
+              sessions={calculatedSessions}
+              onAdjustmentChange={handleAdjustmentChange}
+              onReasonChange={handleReasonChange}
+            />
           </div>
 
           <div className="space-y-6">
             <TaxDeductionForm taxes={taxes} onChange={handleTaxChange} />
-
             <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <h3 className="font-bold">Calculation Summary</h3>
               <p>Platform Fee: {taxes.platformFee}%</p>
               <p>GST Rate: {taxes.gstRate}% (on platform fee)</p>
               <p>TDS Rate: {taxes.tdsRate}% (on gross amount)</p>
+              <p className="mt-2 font-medium">
+                Total Adjustments: ₹{totalAdjustments.toFixed(2)}
+              </p>
             </div>
             <PayoutSummary
               sessions={calculatedSessions}
               totalPayout={totalPayout}
+              totalAdjustments={totalAdjustments}
               taxes={taxes}
-              manualAdjustment={manualAdjustment}
             />
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -314,14 +305,10 @@ const AdminPayouts = () => {
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Net Amount
+                    Total Adjustments
                   </div>
                   <div className="text-xl font-bold">
-                    ₹
-                    {(
-                      simulationResults.totalPayout -
-                      simulationResults.taxDeductions
-                    ).toFixed(2)}
+                    ₹{simulationResults.totalAdjustments.toFixed(2)}
                   </div>
                 </div>
               </div>
