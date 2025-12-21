@@ -1,175 +1,233 @@
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-
-const validationSchema = Yup.object().shape({
-  email: Yup.string()
-    .email('Invalid email address')
-    .required('Email is required'),
-  newPassword: Yup.string()
-    .min(8, 'Password must be at least 8 characters')
-    .required('Password is required'),
-  confirmNewPassword: Yup.string()
-    .oneOf([Yup.ref('newPassword'), null], 'Passwords must match')
-    .required('Confirm Password is required')
-});
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  FiLock,
+  FiMail,
+  FiArrowLeft,
+  FiCheck,
+  FiAlertCircle,
+} from "react-icons/fi";
 
 const ResetPassword = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const formik = useFormik({
-    initialValues: {
-      email: '',
-      newPassword: '',
-      confirmNewPassword: ''
-    },
-    validationSchema,
-    onSubmit: async (values, { setSubmitting, setFieldError }) => {
-      try {
-        const users = JSON.parse(localStorage.getItem('users')) || [];
-        const userIndex = users.findIndex(u => u.email === values.email);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [loading, setLoading] = useState(false);
 
-        if (userIndex === -1) {
-          throw new Error('Email not found');
-        }
-
-        const updatedUsers = [...users];
-        updatedUsers[userIndex] = {
-          ...updatedUsers[userIndex],
-          password: values.newPassword
-        };
-
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-        formik.setStatus({
-          success: 'Password reset successfully. Redirecting...'
-        });
-
-        setTimeout(() => navigate('/login'), 2000);
-      } catch (err) {
-        setFieldError('email', err.message);
-      } finally {
-        setSubmitting(false);
-      }
-    }
-  });
-
+  // Redirect if already logged in
   if (user) {
-    navigate('/');
+    navigate(user.role === "admin" ? "/admin/dashboard" : "/mentor/dashboard");
+    return null;
   }
 
+  const validateForm = () => {
+    if (!email.includes("@")) return "Please enter a valid email";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    if (password !== confirmPassword) return "Passwords don't match";
+    return "";
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const error = validateForm();
+    if (error) {
+      setStatus({ type: "error", message: error });
+      return;
+    }
+
+    setLoading(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Mock localStorage update
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const userIndex = users.findIndex((u) => u.email === email);
+
+      if (userIndex === -1) {
+        throw new Error("Email not found");
+      }
+
+      users[userIndex].password = password;
+      localStorage.setItem("users", JSON.stringify(users));
+
+      setStatus({
+        type: "success",
+        message: "Password updated! Redirecting to login...",
+      });
+
+      setTimeout(() => navigate("/login"), 2000);
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error.message || "Something went wrong",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full">
+        {/* Logo/Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Reset Password
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            Enter your email and new password
-          </p>
+          </h1>
         </div>
 
-        {formik.errors.email && formik.touched.email && (
-          <div className="p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded">
-            {formik.errors.email}
+        {/* Status Messages */}
+        {status.message && (
+          <div
+            className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
+              status.type === "error"
+                ? "bg-red-50 border border-red-200"
+                : "bg-green-50 border border-green-200"
+            }`}
+          >
+            {status.type === "error" ? (
+              <FiAlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            ) : (
+              <FiCheck className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+            )}
+            <p
+              className={`text-sm ${
+                status.type === "error" ? "text-red-700" : "text-green-700"
+              }`}
+            >
+              {status.message}
+            </p>
           </div>
         )}
 
-        {formik.status?.success && (
-          <div className="p-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-100 rounded">
-            {formik.status.success}
-          </div>
-        )}
-
-        <form className="mt-8 space-y-6" onSubmit={formik.handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
+        {/* Form */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                className={`appearance-none relative block w-full px-3 py-2 border ${formik.errors.email && formik.touched.email
-                    ? 'border-red-500'
-                    : 'border-gray-300 dark:border-gray-600'
-                  } placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-700`}
-                placeholder="email@example.com"
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                value={formik.values.email}
-              />
+              <div className="relative">
+                <FiMail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
             </div>
 
+            {/* New Password */}
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                New Password
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New password
               </label>
-              <input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                className={`appearance-none relative block w-full px-3 py-2 border ${formik.errors.newPassword && formik.touched.newPassword
-                    ? 'border-red-500'
-                    : 'border-gray-300 dark:border-gray-600'
-                  } placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-700`}
-                placeholder="New password (min 8 characters)"
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                value={formik.values.newPassword}
-              />
-              {formik.errors.newPassword && formik.touched.newPassword && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {formik.errors.newPassword}
-                </p>
-              )}
+              <div className="relative">
+                <FiLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  placeholder="At least 6 characters"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
 
+            {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Confirm New Password
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm password
               </label>
-              <input
-                id="confirmNewPassword"
-                name="confirmNewPassword"
-                type="password"
-                className={`appearance-none relative block w-full px-3 py-2 border ${formik.errors.confirmNewPassword && formik.touched.confirmNewPassword
-                    ? 'border-red-500'
-                    : 'border-gray-300 dark:border-gray-600'
-                  } placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-700`}
-                placeholder="Confirm new password"
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                value={formik.values.confirmNewPassword}
-              />
-              {formik.errors.confirmNewPassword && formik.touched.confirmNewPassword && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {formik.errors.confirmNewPassword}
-                </p>
-              )}
+              <div className="relative">
+                <FiLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  placeholder="Re-enter your password"
+                  required
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
+            {/* Submit Button */}
             <button
               type="submit"
-              disabled={formik.isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3.5 px-4 rounded-xl transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow cursor-pointer"
             >
-              {formik.isSubmitting ? 'Resetting...' : 'Reset Password'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin h-5 w-5 mr-3 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  Resetting password...
+                </div>
+              ) : (
+                "Reset password"
+              )}
             </button>
-          </div>
-        </form>
+          </form>
 
-        <div className="text-center text-sm">
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-            Back to Login
-          </Link>
+          {/* Back to Login */}
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <Link
+              to="/login"
+              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <FiArrowLeft className="mr-2" />
+              Back to login
+            </Link>
+          </div>
         </div>
+
+        {/* Help Text */}
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Need help?{" "}
+          <a href="/support" className="text-blue-600 hover:text-blue-700">
+            Contact support
+          </a>
+        </p>
       </div>
     </div>
   );
