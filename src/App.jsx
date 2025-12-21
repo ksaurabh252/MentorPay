@@ -1,112 +1,97 @@
 import "./App.css";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
-import AuditLogs from "./pages/Admin/AuditLogs";
-import AdminPayouts from "./pages/Admin/AdminPayouts";
-import AdminSessions from "./pages/Admin/Sessions";
-import Header from "./components/common/Header";
-import MentorDashboard from "./components/dashboard/MentorDashboard";
-import ProtectedRoute from "./components/common/ProtectedRoute";
-import TestModeBanner from "./components/common/TestModeBanner";
+// Contexts
 import AuthProvider from "./contexts/AuthContext";
 import { AuditLogProvider } from "./contexts/AuditLogContext";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { TaxProvider } from "./contexts/TaxContext";
 import { TestModeProvider } from "./contexts/TestModeContext";
+
+// Layouts
+import DashboardLayout from "./components/layouts/DashboardLayout";
+import AuthLayout from "./components/layouts/AuthLayout";
+
+// Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import MentorSessionForm from "./pages/Mentor/MentorSessionForm";
-import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/Signup";
-import TaxAdminPage from "./pages/Admin/TaxAdminPage";
+import ResetPassword from "./pages/ResetPassword";
 import Unauthorized from "./pages/Unauthorized";
 
+// Admin Pages
+import AdminSessions from "./pages/Admin/Sessions";
+import AdminPayouts from "./pages/Admin/AdminPayouts";
+import TaxAdminPage from "./pages/Admin/TaxAdminPage";
+import AuditLogs from "./pages/Admin/AuditLogs";
+
+// Mentor Pages
+import MentorDashboard from "./components/dashboard/MentorDashboard";
+import MentorSessionForm from "./pages/Mentor/MentorSessionForm";
 
 function App() {
-  const [testMode, setTestMode] = useState(false);
-
   return (
     <TaxProvider>
       <TestModeProvider>
-        <Router>
-          <DarkModeProvider>
+        <DarkModeProvider>
+          <Router>
             <AuthProvider>
-              <Header />
-              {testMode && <TestModeBanner />}
               <Routes>
-                {/* Public routes */}
+                {/* Public Route */}
                 <Route path="/" element={<Home />} />
-                <Route path="/login" element={
-                  <ProtectedRoute inverse>
-                    <Login />
-                  </ProtectedRoute>
-                } />
-                <Route path="/signup" element={
-                  <ProtectedRoute inverse>
-                    <Signup />
-                  </ProtectedRoute>
-                } />
-                <Route path="/reset-password" element={
-                  <ProtectedRoute inverse>
-                    <ResetPassword />
-                  </ProtectedRoute>
-                } />
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
-                {/* Admin routes */}
-                <Route path="/admin" element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminSessions />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/sessions" element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminSessions />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/payouts" element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminPayouts testMode={testMode} setTestMode={setTestMode} />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/taxes" element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <TaxAdminPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/audit-logs" element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AuditLogProvider>
-                      <AuditLogs />
-                    </AuditLogProvider>
-                  </ProtectedRoute>
-                } />
+                {/* Authentication Routes (No Header) */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ResetPassword />} />
+                </Route>
 
-                {/* Mentor routes */}
-                <Route path="/mentor/dashboard" element={
-                  <ProtectedRoute>
-                    <MentorDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/mentor/sessions/new" element={
-                  <ProtectedRoute>
-                    <MentorSessionForm />
-                  </ProtectedRoute>
-                } />
+                {/* --- PROTECTED ROUTES START HERE --- */}
 
-                {/* Fallback */}
-                <Route path="*" element={
-                  <Navigate to={
-                    JSON.parse(localStorage.getItem('user'))?.role === 'admin'
-                      ? '/admin/sessions'
-                      : '/mentor/dashboard'
-                  } />
-                } />
+                {/* Admin Routes (Only for 'admin' role) */}
+                <Route element={<DashboardLayout allowedRoles={["admin"]} />}>
+                  <Route
+                    path="/admin"
+                    element={<Navigate to="/admin/sessions" replace />}
+                  />
+                  <Route path="/admin/sessions" element={<AdminSessions />} />
+                  <Route path="/admin/payouts" element={<AdminPayouts />} />
+                  <Route path="/admin/taxes" element={<TaxAdminPage />} />
+                  <Route
+                    path="/admin/audit-logs"
+                    element={
+                      <AuditLogProvider>
+                        <AuditLogs />
+                      </AuditLogProvider>
+                    }
+                  />
+                </Route>
+
+                {/* Mentor Routes (Only for 'mentor' role) */}
+                <Route element={<DashboardLayout allowedRoles={["mentor"]} />}>
+                  <Route
+                    path="/mentor/dashboard"
+                    element={<MentorDashboard />}
+                  />
+                  <Route
+                    path="/mentor/sessions/new"
+                    element={<MentorSessionForm />}
+                  />
+                </Route>
+
+                {/* Fallback for unknown routes */}
+                <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </AuthProvider>
-          </DarkModeProvider>
-        </Router>
+          </Router>
+        </DarkModeProvider>
       </TestModeProvider>
     </TaxProvider>
   );
