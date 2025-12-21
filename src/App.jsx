@@ -6,34 +6,52 @@ import {
   Navigate,
 } from "react-router-dom";
 
-// Contexts
-import AuthProvider from "./contexts/AuthContext";
-import { AuditLogProvider } from "./contexts/AuditLogContext";
-import { DarkModeProvider } from "./contexts/DarkModeContext";
-import { TaxProvider } from "./contexts/TaxContext";
-import { TestModeProvider } from "./contexts/TestModeContext";
+// ===== CONTEXT PROVIDERS =====
+// Global state management for various application features
+import AuthProvider from "./contexts/AuthContext"; // Authentication state and user management
+import { AuditLogProvider } from "./contexts/AuditLogContext"; // Audit logging for admin actions
+import { DarkModeProvider } from "./contexts/DarkModeContext"; // Theme switching (light/dark mode)
+import { TaxProvider } from "./contexts/TaxContext"; // Tax calculation and management
+import { TestModeProvider } from "./contexts/TestModeContext"; // Test/demo mode functionality
 
-// Layouts
-import DashboardLayout from "./components/layouts/DashboardLayout";
-import AuthLayout from "./components/layouts/AuthLayout";
+// ===== LAYOUT COMPONENTS =====
+// Wrapper components that provide consistent UI structure
+import DashboardLayout from "./components/layouts/DashboardLayout"; // Layout for authenticated pages with navigation
+import AuthLayout from "./components/layouts/AuthLayout"; // Layout for authentication pages (login/signup)
 
-// Pages
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ResetPassword from "./pages/ResetPassword";
-import Unauthorized from "./pages/Unauthorized";
+// ===== PUBLIC PAGES =====
+// Pages accessible without authentication
+import Home from "./pages/Home"; // Landing/home page
+import Login from "./pages/Login"; // User login page
+import Signup from "./pages/Signup"; // User registration page
+import ResetPassword from "./pages/ResetPassword"; // Password reset page
+import Unauthorized from "./pages/Unauthorized"; // Access denied page
 
-// Admin Pages
-import AdminSessions from "./pages/Admin/Sessions";
-import AdminPayouts from "./pages/Admin/AdminPayouts";
-import TaxAdminPage from "./pages/Admin/TaxAdminPage";
-import AuditLogs from "./pages/Admin/AuditLogs";
+// ===== ADMIN PAGES =====
+// Pages restricted to admin role only
+import AdminSessions from "./pages/Admin/Sessions"; // Session management for admins
+import AdminPayouts from "./pages/Admin/AdminPayouts"; // Payout processing and history
+import TaxAdminPage from "./pages/Admin/TaxAdminPage"; // Tax configuration and reporting
+import AuditLogs from "./pages/Admin/AuditLogs"; // System audit trail viewer
 
-// Mentor Pages
-import MentorDashboard from "./components/dashboard/MentorDashboard";
-import MentorSessionForm from "./pages/Mentor/MentorSessionForm";
+// ===== MENTOR PAGES =====
+// Pages restricted to mentor role only
+import MentorDashboard from "./components/dashboard/MentorDashboard"; // Mentor's main dashboard
+import MentorSessionForm from "./pages/Mentor/MentorSessionForm"; // Form to create new mentoring sessions
 
+/**
+ * Main Application Component
+ *
+ * Handles routing and global state management through context providers.
+ * Implements role-based access control for different user types.
+ *
+ * Context Provider Hierarchy (outer to inner):
+ * 1. TaxProvider - Tax calculations and settings
+ * 2. TestModeProvider - Demo/test functionality
+ * 3. DarkModeProvider - UI theme management
+ * 4. Router - React Router navigation
+ * 5. AuthProvider - Authentication and user state
+ */
 function App() {
   return (
     <TaxProvider>
@@ -42,20 +60,18 @@ function App() {
           <Router>
             <AuthProvider>
               <Routes>
-                {/* Public Route */}
+                {/* Public Routes - accessible without authentication */}
                 <Route path="/" element={<Home />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
-                {/* Authentication Routes (No Header) */}
+                {/* Authentication Routes (No main navigation) */}
                 <Route element={<AuthLayout />}>
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/forgot-password" element={<ResetPassword />} />
                 </Route>
 
-                {/* --- PROTECTED ROUTES START HERE --- */}
-
-                {/* Admin Routes (Only for 'admin' role) */}
+                {/* Admin Routes (admin role only) */}
                 <Route element={<DashboardLayout allowedRoles={["admin"]} />}>
                   <Route
                     path="/admin"
@@ -74,7 +90,7 @@ function App() {
                   />
                 </Route>
 
-                {/* Mentor Routes (Only for 'mentor' role) */}
+                {/* Mentor Routes (mentor role only) */}
                 <Route element={<DashboardLayout allowedRoles={["mentor"]} />}>
                   <Route
                     path="/mentor/dashboard"
@@ -86,7 +102,7 @@ function App() {
                   />
                 </Route>
 
-                {/* Fallback for unknown routes */}
+                {/* Fallback route for unknown URLs */}
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </AuthProvider>
