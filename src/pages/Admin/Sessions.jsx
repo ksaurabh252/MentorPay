@@ -1,80 +1,104 @@
-import { useEffect, useState } from 'react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
-import CSVUpload from '../../components/sessions/CSVUpload';
-import SessionList from '../../components/sessions/SessionList';
-import DateRangePicker from '../../components/common/DateRangePicker';
-import { subDays } from 'date-fns';
-import { useAuth } from '../../contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Navigate } from "react-router-dom";
+import { subDays } from "date-fns";
+import { FiTrash2 } from "react-icons/fi";
 
-const sessionSchema = Yup.object().shape({
-  mentorName: Yup.string()
-    .required('Mentor name is required')
-    .min(3, 'Minimum 3 characters'),
-  sessionDate: Yup.date()
-    .required('Session date is required')
-    .max(new Date(), 'Date cannot be in the future'),
-  sessionTime: Yup.string()
-    .required('Time is required')
-    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
-  duration: Yup.number()
-    .required('Duration is required')
-    .min(15, 'Minimum 15 minutes')
-    .max(240, 'Maximum 4 hours')
-    .test('is-multiple-of-15', 'Must be in 15-minute increments', value => value % 15 === 0),
-  sessionType: Yup.string().required('Session type is required'),
-  ratePerHour: Yup.number()
-    .required('Rate is required')
-    .min(500, 'Minimum ₹500/hour')
-    .max(10000, 'Maximum ₹10,000/hour')
-});
+// Components
+import DateRangePicker from "../../components/common/DateRangePicker";
+import DataTable from "../../components/common/DataTable";
 
+// Context & Utils
+import { useAuth } from "../../contexts/AuthContext";
+import { formatCurrency } from "../../utils/finance";
+import { getSessions, addSession, deleteSession } from "../../services/mockApi";
+
+/**
+ * AdminSessions Component
+ *
+ * Comprehensive session management interface for administrators featuring:
+ * - Manual session entry with real-time payout calculation
+ * - CSV bulk upload functionality
+ * - Date range filtering and session overview
+ * - CRUD operations (Create, Read, Delete) for sessions
+ * - Form validation with React Hook Form
+ * - Role-based access control (admin only)
+ */
 const AdminSessions = () => {
+  // ===== STATE MANAGEMENT =====
 
-  const [activeTab, setActiveTab] = useState('manual');
-  const [sessions, setSessions] = useState([]);
-  const [filteredSessions, setFilteredSessions] = useState([]);
+  // Tab navigation state (manual entry vs CSV upload)
+  const [activeTab, setActiveTab] = useState("manual");
+
+  // Session data management
+  const [sessions, setSessions] = useState([]); // All sessions from API
+  const [filteredSessions, setFilteredSessions] = useState([]); // Sessions after date filtering
+
+  // Date range filter configuration
   const [dateRange, setDateRange] = useState({
-    startDate: subDays(new Date(), 7),
-    endDate: new Date(),
+    startDate: subDays(new Date(), 7), // Default to last 7 days
+    endDate: new Date(), // Up to today
   });
-  // eslint-disable-next-line no-unused-vars
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Get current user for role validation
+  const { user } = useAuth();
+
+  // ===== FORM SETUP WITH REACT HOOK FORM =====
+
+  /**
+   * React Hook Form configuration with validation rules
+   * Provides form state management, validation, and submission handling
+   */
+  const {
+    register, // Register input fields with validation
+    handleSubmit, // Form submission handler
+    reset, // Reset form to default values
+    watch, // Watch field values for real-time calculations
+    formState: { errors, isSubmitting }, // Form state and validation errors
+  } = useForm({
+    // Default form values
+    defaultValues: {
+      sessionDate: new Date().toISOString().split("T")[0], // Today's date
+      duration: 60, // 1 hour default
+      ratePerHour: 4000, // Default rate in rupees
+      sessionType: "live", // Default session type
+    },
+  });
+
+  // ===== REAL-TIME CALCULATIONS =====
+
+  // Watch duration and rate fields for live payout preview
+  const duration = watch("duration");
+  const ratePerHour = watch("ratePerHour");
+
+  // Calculate estimated payout based on current form values
+  const estimatedPayout = ((duration || 0) / 60) * (ratePerHour || 0);
+
+  // ===== DATA FETCHING AND FILTERING =====
+
+  /**
+   * Load sessions data on component mount
+   */
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getSessions();
+      setSessions(data);
+    };
+    fetch();
+  }, []);
+
+  /**
+   * Filter sessions based on selected date range
+   * Runs when sessions data or date range changes
+   */
   useEffect(() => {
     filterSessions(dateRange);
-  }, [sessions]);
+  }, [sessions, dateRange]);
 
-  const { user } = useAuth();
-  if (user?.role !== 'admin') {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-
-  const handleSubmit = async (values, { resetForm }) => {
-    setIsSubmitting(true);
-    try {
-      console.log('Form Submission:', values);
-      const payout = (values.duration / 60) * values.ratePerHour;
-      const newSession = {
-        ...values,
-        id: Date.now(),
-        payout,
-        status: 'pending'
-      };
-      setSessions([...sessions, newSession]);
-      resetForm();
-    } catch (error) {
-      console.error('Submission error:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCSVUpload = (data) => {
-    setSessions([...sessions, ...data]);
-  };
-
+  /**
+   * Apply date range filtering to sessions
+   * @param {Object} range - Object containing startDate and endDate
+   */
   const filterSessions = (range) => {
     const filtered = sessions.filter((session) => {
       const sessionDate = new Date(session.sessionDate);
@@ -83,241 +107,301 @@ const AdminSessions = () => {
     setFilteredSessions(filtered);
   };
 
-  const handleDateRangeChange = (range) => {
-    console.log('New date range selected:', range);
-    setDateRange(range);
-    filterSessions(range);
+  // ===== EVENT HANDLERS =====
+
+  /**
+   * Handle manual session creation form submission
+   * Validates data, calculates payout, and saves to API
+   * @param {Object} data - Form data from React Hook Form
+   */
+  const onSubmit = async (data) => {
+    try {
+      // Calculate final payout based on duration and rate
+      const payout = (data.duration / 60) * data.ratePerHour;
+
+      // Create new session object
+      const newSession = {
+        ...data,
+        sessionType: data.sessionType,
+        payout,
+        status: "pending", // Default status for new sessions
+      };
+
+      // Save to database and update local state
+      const updatedList = await addSession(newSession);
+      setSessions(updatedList);
+
+      // Reset form and show success message
+      reset();
+      alert("Session Added Successfully!");
+    } catch (error) {
+      console.error("Submission error:", error);
+    }
   };
 
+  /**
+   * Handle session deletion with confirmation
+   * @param {string} id - Session ID to delete
+   */
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this session?")) {
+      try {
+        const updatedList = await deleteSession(id); // API call
+        setSessions(updatedList); // Update UI
+      } catch (error) {
+        console.error("Delete failed", error);
+      }
+    }
+  };
 
+  /**
+   * Handle CSV upload data processing
+   * @param {Array} data - Array of session objects from CSV
+   */
+  const handleCSVUpload = (data) => {
+    setSessions([...sessions, ...data]);
+  };
+
+  // ===== ACCESS CONTROL =====
+
+  // Redirect non-admin users to unauthorized page
+  if (user?.role !== "admin") {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // ===== TABLE CONFIGURATION =====
+
+  /**
+   * Define table columns for sessions display
+   * Includes formatted data rendering and action buttons
+   */
+  const columns = [
+    {
+      header: "Mentor",
+      accessorKey: "mentorName",
+    },
+    {
+      header: "Date",
+      render: (row) => new Date(row.sessionDate).toLocaleDateString(),
+    },
+    {
+      header: "Type",
+      render: (row) => <span className="capitalize">{row.sessionType}</span>,
+    },
+    {
+      header: "Duration",
+      render: (row) => `${row.duration} mins`,
+    },
+    {
+      header: "Rate",
+      render: (row) => `${formatCurrency(row.ratePerHour)}/hr`,
+    },
+    {
+      header: "Payout",
+      render: (row) => formatCurrency(row.payout),
+    },
+    {
+      header: "Status",
+      render: (row) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800`}
+        >
+          {row.status}
+        </span>
+      ),
+    },
+    {
+      header: "Actions",
+      render: (row) => (
+        <button
+          onClick={() => handleDelete(row.id)}
+          className="text-red-600 hover:text-red-800 p-2 transition-colors"
+          title="Delete Session"
+        >
+          <FiTrash2 />
+        </button>
+      ),
+    },
+  ];
+
+  // ===== COMPONENT RENDER =====
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Session Management</h1>
+      {/* Page Header */}
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        Session Management
+      </h1>
 
+      {/* Date Range Filter */}
       <div className="mb-6">
-        <DateRangePicker value={dateRange} onChange={handleDateRangeChange} />
-        <div className="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <p className="text-gray-600 dark:text-gray-300">Total Payout for Selected Range:</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            ₹{filteredSessions.reduce((sum, session) => sum + session.payout, 0).toFixed(2)}
-          </p>
-        </div>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
-      <SessionList sessions={filteredSessions} />
-
+      {/* Tab Navigation and Content */}
       <div className="mb-6">
+        {/* Tab Headers */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           <button
-            className={`py-2 px-4 font-medium ${activeTab === 'manual'
-              ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-              : 'text-gray-500 dark:text-gray-400'
-              }`}
-            onClick={() => setActiveTab('manual')}
+            className={`py-2 px-4 font-medium ${
+              activeTab === "manual"
+                ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+            onClick={() => setActiveTab("manual")}
           >
             Manual Entry
           </button>
           <button
-            className={`py-2 px-4 font-medium ${activeTab === 'csv'
-              ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-              : 'text-gray-500 dark:text-gray-400'
-              }`}
-            onClick={() => setActiveTab('csv')}
+            className={`py-2 px-4 font-medium ${
+              activeTab === "csv"
+                ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+            onClick={() => setActiveTab("csv")}
           >
             CSV Upload
           </button>
         </div>
 
+        {/* Tab Content */}
         <div className="mt-4">
-          {activeTab === 'manual' ? (
+          {activeTab === "manual" ? (
+            /* Manual Entry Form */
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-              <Formik
-                initialValues={{
-                  mentorName: '',
-                  sessionDate: new Date().toISOString().split('T')[0],
-                  sessionTime: '',
-                  duration: 60,
-                  sessionType: 'live',
-                  ratePerHour: 4000
-                }}
-                validationSchema={sessionSchema}
-                onSubmit={handleSubmit}
-              >
-                {({ values, errors, touched, isSubmitting }) => (
-                  <Form>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Mentor Name */}
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                          Mentor Name
-                        </label>
-                        <Field
-                          name="mentorName"
-                          as="select"
-                          className={`w-full p-2 border rounded ${errors.mentorName && touched.mentorName
-                            ? 'border-red-500'
-                            : 'dark:bg-gray-700 dark:border-gray-600'
-                            }`}
-                        >
-                          <option value="">Select Mentor</option>
-                          <option value="John Doe">John Doe</option>
-                          <option value="Jane Smith">Jane Smith</option>
-                        </Field>
-                        <ErrorMessage
-                          name="mentorName"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      </div>
-
-                      {/* Session Date */}
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                          Session Date
-                        </label>
-                        <Field
-                          type="date"
-                          name="sessionDate"
-                          max={new Date().toISOString().split('T')[0]}
-                          className={`w-full p-2 border rounded ${errors.sessionDate && touched.sessionDate
-                            ? 'border-red-500'
-                            : 'dark:bg-gray-700 dark:border-gray-600'
-                            }`}
-                        />
-                        <ErrorMessage
-                          name="sessionDate"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      </div>
-
-                      {/* Session Time */}
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                          Session Time
-                        </label>
-                        <Field
-                          type="time"
-                          name="sessionTime"
-                          className={`w-full p-2 border rounded ${errors.sessionTime && touched.sessionTime
-                            ? 'border-red-500'
-                            : 'dark:bg-gray-700 dark:border-gray-600'
-                            }`}
-                        />
-                        <ErrorMessage
-                          name="sessionTime"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      </div>
-
-                      {/* Duration */}
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                          Duration (minutes)
-                        </label>
-                        <Field
-                          type="number"
-                          name="duration"
-                          min="15"
-                          step="15"
-                          className={`w-full p-2 border rounded ${errors.duration && touched.duration
-                            ? 'border-red-500'
-                            : 'dark:bg-gray-700 dark:border-gray-600'
-                            }`}
-                        />
-                        <ErrorMessage
-                          name="duration"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      </div>
-
-                      {/* Session Type */}
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                          Session Type
-                        </label>
-                        <Field
-                          name="sessionType"
-                          as="select"
-                          className={`w-full p-2 border rounded ${errors.sessionType && touched.sessionType
-                            ? 'border-red-500'
-                            : 'dark:bg-gray-700 dark:border-gray-600'
-                            }`}
-                        >
-                          <option value="live">Live Session</option>
-                          <option value="recorded">Recorded Review</option>
-                          <option value="evaluation">Evaluation</option>
-                        </Field>
-                        <ErrorMessage
-                          name="sessionType"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      </div>
-
-                      {/* Rate per Hour */}
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                          Rate per Hour (₹)
-                        </label>
-                        <Field
-                          type="number"
-                          name="ratePerHour"
-                          className={`w-full p-2 border rounded ${errors.ratePerHour && touched.ratePerHour
-                            ? 'border-red-500'
-                            : 'dark:bg-gray-700 dark:border-gray-600'
-                            }`}
-                        />
-                        <ErrorMessage
-                          name="ratePerHour"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Payout Breakdown */}
-                    <div className="mt-6 bg-blue-50 dark:bg-gray-700 p-4 rounded-lg">
-                      <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
-                        Payout Breakdown
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-300">
-                        Duration: {values.duration} minutes
-                      </p>
-                      <p className="text-gray-600 dark:text-gray-300">
-                        Rate: ₹{values.ratePerHour}/hour
-                      </p>
-                      <p className="font-medium mt-2">
-                        Estimated Payout: ₹
-                        {((values.duration / 60) * values.ratePerHour).toFixed(2)}
-                      </p>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className={`mt-6 px-4 py-2 text-white rounded ${isSubmitting
-                        ? 'bg-blue-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                        }`}
+              <form onSubmit={handleSubmit(onSubmit)}>
+                {/* Form Fields Grid */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Mentor Selection Dropdown */}
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                      Mentor Name
+                    </label>
+                    <select
+                      {...register("mentorName", {
+                        required: "Mentor name is required",
+                      })}
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      {isSubmitting ? 'Submitting...' : 'Add Session'}
-                    </button>
-                  </Form>
-                )}
-              </Formik>
+                      <option value="">Select Mentor</option>
+                      <option value="John Doe">John Doe</option>
+                      <option value="Jane Smith">Jane Smith</option>
+                    </select>
+                    {/* Validation Error Display */}
+                    {errors.mentorName && (
+                      <p className="text-red-500 text-sm">
+                        {errors.mentorName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Session Date Input */}
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                      Session Date
+                    </label>
+                    <input
+                      type="date"
+                      {...register("sessionDate", {
+                        required: "Date is required",
+                      })}
+                      max={new Date().toISOString().split("T")[0]} // Prevent future dates
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    {errors.sessionDate && (
+                      <p className="text-red-500 text-sm">
+                        {errors.sessionDate.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Duration Input with Validation */}
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                      Duration (mins)
+                    </label>
+                    <input
+                      type="number"
+                      {...register("duration", {
+                        required: "Required",
+                        min: { value: 15, message: "Min 15 mins" },
+                        validate: (value) =>
+                          value % 15 === 0 || "Must be multiple of 15", // 15-minute increments
+                      })}
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    {errors.duration && (
+                      <p className="text-red-500 text-sm">
+                        {errors.duration.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hourly Rate Input */}
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                      Rate (₹/hr)
+                    </label>
+                    <input
+                      type="number"
+                      {...register("ratePerHour", {
+                        required: "Required",
+                        min: 500, // Minimum rate validation
+                      })}
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    {errors.ratePerHour && (
+                      <p className="text-red-500 text-sm">
+                        {errors.ratePerHour.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Session Type Selection */}
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                      Type
+                    </label>
+                    <select
+                      {...register("sessionType")}
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="live">Live Session</option>
+                      <option value="recorded">Recorded Review</option>
+                      <option value="evaluation">Evaluation</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Real-time Payout Preview */}
+                <div className="mt-6 bg-blue-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
+                    Payout Preview
+                  </h3>
+                  <p className="font-medium text-xl text-blue-600 dark:text-blue-400">
+                    Est. Payout: {formatCurrency(estimatedPayout)}
+                  </p>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {isSubmitting ? "Adding..." : "Add Session"}
+                </button>
+              </form>
             </div>
           ) : (
+            /* CSV Upload Component */
             <CSVUpload onUpload={handleCSVUpload} />
           )}
         </div>
       </div>
 
-      <SessionList sessions={filteredSessions} />
+      {/* Sessions Data Table */}
+      <DataTable columns={columns} data={filteredSessions} />
     </div>
   );
 };
