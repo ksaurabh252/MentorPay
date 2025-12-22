@@ -107,6 +107,7 @@ const Signup = () => {
     } catch (err) {
       // Handle specific error messages from backend if available
       // Falls back to generic message if no specific error provided
+      console.error(err);
       setError(
         err.response?.data?.message ||
           "Failed to create an account. Please try again."
