@@ -11,7 +11,11 @@ import DataTable from "../../components/common/DataTable";
 // Context & Utils
 import { useAuth } from "../../contexts/AuthContext";
 import { formatCurrency } from "../../utils/finance";
-import { getSessions, addSession, deleteSession } from "../../services/mockApi";
+import {
+  getSessions,
+  createSession,
+  deleteSession,
+} from "../../services/mockApi";
 
 /**
  * AdminSessions Component
@@ -128,7 +132,7 @@ const AdminSessions = () => {
       };
 
       // Save to database and update local state
-      const updatedList = await addSession(newSession);
+      const updatedList = await createSession(newSession);
       setSessions(updatedList);
 
       // Reset form and show success message
