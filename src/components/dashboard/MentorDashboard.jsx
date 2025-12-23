@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { FiDownload, FiFilter, FiRefreshCw } from "react-icons/fi";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -11,7 +11,7 @@ import ReceiptPDF from "../../components/receipts/ReceiptPDF";
 // ExportButton - Reusable button for exporting data (CSV/Excel)
 import ExportButton from "../../components/common/ExportButton";
 // DataTable - Reusable table component for displaying tabular data
-import DataTable from "../common/DataTable";
+import DataTable from "../../components/common/DataTable";
 
 // ============================================
 // UTILITY & SERVICE IMPORTS
@@ -86,15 +86,16 @@ const MentorDashboard = () => {
    * 1. Sets loading state to true
    * 2. Fetches all sessions from API
    * 3. Filters sessions based on user role:
-   *    - Admin: Gets all sessions
-   *    - Mentor: Gets only their own sessions (matched by name or ID)
+   * - Admin: Gets all sessions
+   * - Mentor: Gets only their own sessions (matched by name or ID)
    * 4. Updates sessions state with filtered data
    * 5. Handles errors and resets loading state
    *
    * @async
    * @function loadData
    */
-  const loadData = async () => {
+  // Wrapped in useCallback to prevent infinite loops in useEffect
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch all sessions from mock API
@@ -109,7 +110,12 @@ const MentorDashboard = () => {
               (s) => s.mentorName === user.name || s.mentorId === user.id
             ); // Mentor sees only their sessions
 
-      setSessions(userSessions);
+      // FIXED: Added sorting logic here (moved from useEffect) to ensure consistent ordering
+      const sortedSessions = userSessions.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      setSessions(sortedSessions);
     } catch (error) {
       console.error("Failed to load sessions", error);
       // TODO: Add user-facing error notification (toast/alert)
@@ -117,7 +123,7 @@ const MentorDashboard = () => {
       // Always reset loading state, whether success or failure
       setIsLoading(false);
     }
-  };
+  }, [user]); // Re-create function if user changes
 
   // ============================================
   // EFFECTS
@@ -128,9 +134,10 @@ const MentorDashboard = () => {
    * Re-fetches when user changes (e.g., login/logout, role change)
    */
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    if (user) {
+      loadData();
+    }
+  }, [user, loadData]);
 
   // ============================================
   // FILTERING LOGIC
@@ -330,7 +337,7 @@ const MentorDashboard = () => {
         <button
           onClick={refreshData}
           disabled={isLoading}
-          className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 transition-colors"
+          className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 transition-colors cursor-pointer"
         >
           {/* Spin animation when loading */}
           <FiRefreshCw className={isLoading ? "animate-spin" : ""} />
