@@ -1,113 +1,140 @@
-# 🚀 MentorPay - Mentor Payment Management System
+# MentorPay — Mentor Payment Management System
 
-A comprehensive platform to streamline mentor session tracking, automated payout calculations, tax deductions, and receipt generation — all with built-in audit logging and optional secure communication.
+MentorPay is a role-based React app for tracking mentor sessions, calculating payouts with tax deductions, generating PDF receipts, and viewing audit activity.
 
----
-
-## 🌟 Key Features
-
-### 🧑‍💼 **Admin Portal**
-
-| Feature                | Status  | Description                                |
-| ---------------------- | ------- | ------------------------------------------ |
-| **Session Management** | ✅ Live | Manual entry + CSV upload with validations |
-| **Automated Payouts**  | ✅ Live | Auto-calculated with tax deductions        |
-| **Tax Configuration**  | ✅ Live | GST, TDS, and platform fees setup          |
-| **Receipt Generation** | ✅ Live | PDF format + email dispatch                |
-| **Audit Trail**        | ✅ Live | Full history with before/after viewer      |
-| **Test Mode**          | ✅ Live | Run safe simulations for payouts           |
+> Current version uses a **mock API backed by browser localStorage** (no real backend/database).
 
 ---
 
-### 👩‍🏫 **Mentor Portal**
+## Key Features
 
-| Feature                | Status  | Description                         |
-| ---------------------- | ------- | ----------------------------------- |
-| **Session Submission** | ✅ Live | Structured form with admin approval |
-| **Payout Dashboard**   | ✅ Live | Filterable transaction history      |
-| **Receipt Downloads**  | ✅ Live | Download individual session PDFs    |
-| **Activity Logs**      | ✅ Live | Track personal changes/actions      |
+### Admin Portal
+
+| Feature            | Status                | Notes                                                                  |
+| ------------------ | --------------------- | ---------------------------------------------------------------------- |
+| Session Management | ✅ Live               | Manual entry + date-range filtering                                    |
+| CSV Upload         | ⚠️ Partial            | UI/tab may exist; depends on `CSVUpload` component wiring              |
+| Automated Payouts  | ✅ Live               | Net payout calculation + manual adjustments + simulation               |
+| Tax Configuration  | ✅ Live               | Platform Fee, GST Rate, TDS Rate                                       |
+| Receipt Generation | ✅ Live               | PDF generation; email sending is simulated                             |
+| Audit Logs         | ✅ Live               | List + filters; diff viewer only when log contains `oldValue/newValue` |
+| Test Mode          | ✅ Live               | Safe payout simulation mode                                            |
+| Webhooks           | ✅ Live (client-side) | Sends POST to configured URLs with signature header (CORS may apply)   |
+
+### Mentor Portal
+
+| Feature              | Status  | Notes                                                       |
+| -------------------- | ------- | ----------------------------------------------------------- |
+| Session Submission   | ✅ Live | Saves to localStorage via `createSession()`                 |
+| Live Payout Estimate | ✅ Live | Duration × Rate preview in the form                         |
+| Mentor Dashboard     | ✅ Live | Filter by date/status + export CSV/Excel + receipt download |
+| Activity Logs        | ⚠️ Mock | Uses mocked audit log data                                  |
 
 ---
 
-### 🔄 **Integrations**
+## Feature Highlights
 
-| Feature              | Status     | Description                                   |
-| -------------------- | ---------- | --------------------------------------------- |
-| **CSV/Excel Export** | ✅ Live    | Full data export functionality                |
-| **Webhooks**         | ⚠️ Partial | UI ready; backend trigger pending             |
-| **Secure Chat**      | ⏳ Planned | Encrypted messaging with file sharing support |
+### ✅ Session Entry & Breakdown
 
----
-
-## 🔍 Feature Highlights
-
-### ✅ **Session Entry & Breakdown**
-
-- Add sessions via form or CSV
-- Track mentor, date, time, duration, type, and hourly rate
-- Cumulative summary & smart breakdowns
+- Admin adds sessions via form (CSV upload optional/partial)
+- Mentor submits sessions from `/mentor/sessions/new`
+- Tracks date, type, duration, rate, payout
 - Filter by date range
 
-### ✅ **Payout Calculation Engine**
+### ✅ Payout Calculation Engine
 
-- Auto-deductions (GST, TDS, fees)
-- Override final amounts manually
-- Audit all adjustments
+- Auto deductions: Platform Fee, GST, TDS
+- Admin can apply manual adjustments with reasons
+- Simulation supported via Test Mode
 
-### ✅ **PDF Receipts & Email**
+### ✅ PDF Receipts & Email
 
-- Downloadable receipts with detailed breakdown
-- Add thank-you notes
-- Simulated email previews
+- PDF receipts generated client-side using `@react-pdf/renderer`
+- Custom message supported
+- “Send via Email” is simulated UI (no email provider configured)
 
-### ✅ **Mentor Payout Dashboard**
+### ✅ Audit Logging
 
-- Visual summary of earnings
-- Track payment status:
-  - ✅ Paid
-  - ⏳ Pending
-  - 🔍 Under Review
+- Audit log list with filters (user/date)
+- “View Changes” diff only shows when log includes both `oldValue` and `newValue`
 
-### ✅ **Audit Logging**
+### ✅ Export & Webhooks
 
-- Every change recorded
-- Filter logs by session, user, or date
-- Visual diff viewer for before/after
-
-### ✅ **Test Mode**
-
-- Dry-run calculations without actual dispatch
-- View impact by mentor, session, and tax component
-
-### ✅ **Export & Webhook Panel**
-
-- Export sessions and payouts
-- Setup webhook URLs, events, and secrets
-- Trigger test payloads (live dispatch pending)
+- Export sessions as CSV/Excel
+- Configure webhooks + secret
+- Webhook request includes `X-MentorPay-Signature` header
 
 ---
 
-## 🧮 Tax Administration
+## Tax Administration
 
 - **Path:** `/admin/taxes`
-- **Features:**
-  - Real-time rate adjustment (GST, TDS, Platform Fees)
-  - Input validation (0–100%)
-  - Audit-ready logging of every change for compliance
+- Configure:
+  - Platform Fee (%)
+  - GST Rate (%)
+  - TDS Rate (%)
 
 ---
 
-## 📄 Mentor Receipt Flow
+## Data & Mock API
 
-    Mentor->>System: Requests receipt
-    System->>PDF: Generates document
-    PDF->>Mentor: Downloads file
-    System->>Database: Logs access
+### LocalStorage Keys
 
-Setup Instructions
+- `sessions`
+- `auditLogs`
 
+### Mock API (services/mockApi.js)
+
+- `getSessions()`
+- `createSession(sessionData)`
+- `updateSession(updatedSession)`
+- `deleteSession(sessionId)`
+- `getAuditLogs()`
+
+Reset app data:
+
+- Clear site data in browser OR run:
+  - `localStorage.removeItem("sessions")`
+  - `localStorage.removeItem("auditLogs")`
+
+---
+
+## Routes
+
+### Public
+
+- `/` Home
+- `/login`
+- `/signup`
+- `/forgot-password`
+- `/unauthorized`
+
+### Admin
+
+- `/admin/sessions`
+- `/admin/payouts`
+- `/admin/taxes`
+- `/admin/audit-logs`
+
+### Mentor
+
+- `/mentor/dashboard`
+- `/mentor/sessions/new`
+
+---
+
+## Demo Credentials
+
+- Admin: `admin@example.com` / `demo123`
+- Mentor: `mentor@example.com` / `demo123`
+
+---
+
+## Setup
+
+```bash
 git clone https://github.com/ksaurabh252/MentorPay
-cd mentorpay
+cd MentorPay
 npm install
 npm run dev
+```
